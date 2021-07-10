@@ -1,0 +1,8 @@
+import parseiter.*;
+import stdlib.testsuite.*;
+
+fn main() export {
+  suite = TestSuite();
+  (suite).finish();
+}
+

@@ -1,0 +1,155 @@
+import stdlib.stringutils.*;
+
+struct ParseIter {
+  rest! StrSlice;
+  previousWasWordChar! bool;
+}
+fn copy(iter &ParseIter) ParseIter {
+  ParseIter(iter.rest, iter.previousWasWordChar)
+}
+fn copyInto(iter &ParseIter, dest &!ParseIter) {
+  set dest.rest = iter.rest;
+  set dest.previousWasWordChar = iter.previousWasWordChar;
+}
+fn nextIs(self &ParseIter, needle str) bool {
+  self.rest.startsWith(needle)
+}
+fn nextIn(self &ParseIter, needles str) bool {
+  needles.contains(self.peek())
+}
+fn skipExpect(self &!ParseIter, needle str) { skipExpect(self, needle.slice()) }
+fn skipExpect(self &!ParseIter, needle StrSlice) {
+  vassert(self.rest.startsWith(needle), "Expected " + needle);
+  mut self.previousWasWordChar =
+      isWordChar(needle.slice(needle.len() - 1));
+  mut self.rest = self.rest.slice(needle.len());
+}
+fn skipIfNext(self &!ParseIter, needle str) bool { self!.skipIfNext(needle.slice()) }
+fn skipIfNext(self &!ParseIter, needle StrSlice) bool {
+  = if (self.rest.startsWith(needle)) {
+      skipExpect(self, needle);
+      = true;
+    } else {
+      = false;
+    }
+}
+fn skipIfEndsWith(self &!ParseIter, needle str) bool { self.skipIfEndsWith(needle.slice()) }
+fn skipIfEndsWith(self &!ParseIter, needle StrSlice) bool {
+  = if (self.rest == needle) {
+      skipExpect(self, self.rest);
+      = true;
+    } else {
+      = false;
+    }
+}
+// fn getUntilExpected(self &ParseIter, splitNeedle &IFunction1<mut, StrSlice, bool>) StrSlice {
+//   maybeLineAndRest = self.rest.splitOnce(splitNeedle);
+//   if (maybeLineAndRest.isEmpty()) {
+//     panic("Expected attribute line or --- but received:\n" + self.rest);
+//   }
+//   (line, newRest) = maybeLineAndRest.get();
+//   mut self.rest = newRest;
+//   = line;
+// }
+fn getUntilExpected(self &!ParseIter, splitNeedle str) StrSlice {
+  maybeLineAndRest = self.rest.splitOnce(splitNeedle);
+  if (maybeLineAndRest.isEmpty()) {
+    panic("Expected " + splitNeedle + " but received:\n" + self.rest);
+  }
+  (line, newRest) = maybeLineAndRest.get();
+  mut self.previousWasWordChar =
+      isWordChar(line.slice(line.len()));
+  mut self.rest = newRest;
+  = line;
+}
+fn getUntilMaybe(self &!ParseIter, splitNeedle str) StrSlice {
+  maybeLineAndRest = self.rest.splitOnce(splitNeedle);
+  if (maybeLineAndRest.isEmpty()) {
+    line = self.rest;
+    mut self.previousWasWordChar =
+        isWordChar(line.slice(line.len()));
+    mut self.rest = "".slice();
+    ret line;
+  }
+  (line, newRest) = maybeLineAndRest.get();
+  mut self.previousWasWordChar =
+      isWordChar(line.slice(line.len()));
+  mut self.rest = newRest;
+  ret line;
+}
+fn getNext(self &!ParseIter) StrSlice {
+  result = self.rest.slice(0, 1);
+  mut self.previousWasWordChar = isWordChar(result);
+  mut self.rest = self.rest.slice(1);
+  = result;
+}
+fn hasNext(self &ParseIter) bool {
+  self.rest != ""
+}
+fn peek(self &ParseIter) StrSlice {
+  vassert(self.hasNext(), "Can't peek, nothing left");
+  ret self.rest.slice(0, 1);
+}
+
+
+fn skipIfNextChar<F>(self &!ParseIter, f F) bool {
+  if (self.hasNext() and (f)(self.rest.slice(0, 1))) {
+    mut self.previousWasWordChar = self.rest.slice(0, 1).isWordChar();
+    mut self.rest = self.rest.slice(1);
+    ret true;
+  } else {
+    ret false;
+  }
+}
+
+
+fn nextIsTag(originalInput &ParseIter) Opt<StrSlice> {
+  input = copy(originalInput);
+  input.skipWhitespace();
+}
+
+fn skipWhitespace(input &!ParseIter) {
+  while (input!.skipIfNextChar(isWhitespace)) {
+    mut input.previousWasWordChar = false;
+  }
+}
+
+fn skipNewlines(input &!ParseIter) {
+  while (input!.skipIfNextChar({ _ == "\n" })) {
+    mut input.previousWasWordChar = false;
+  }
+}
+
+fn isWordChar(s StrSlice) bool {
+  ascii = s.slice(0, 1).toAscii();
+  if (ascii >= "A".slice().toAscii() and ascii <= "Z".slice().toAscii()) {
+    ret true;
+  }
+  if (ascii >= "a".slice().toAscii() and ascii <= "z".slice().toAscii()) {
+    ret true;
+  }
+  if (ascii >= "0".slice().toAscii() and ascii <= "9".slice().toAscii()) {
+    ret true;
+  }
+  if (ascii == "_".slice().toAscii()) {
+    ret true;
+  }
+  ret false;
+}
+
+fn nextNumericChar(input &!ParseIter) Opt<int> {
+  if (not input.hasNext()) {
+    ret None<int>();
+  }
+  digitStr = input.peek();
+  ascii = toAscii(digitStr);
+
+  zeroAscii = "0".toAscii();
+  digit = ascii - zeroAscii;
+  if (digit < 0 or digit > 9) {
+    ret None<int>();
+  }
+
+  input!.getNext();
+  ret Some(digit);
+}
