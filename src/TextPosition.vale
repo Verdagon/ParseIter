@@ -1,0 +1,29 @@
+
+struct TextPosition imm {
+  offset int;
+  line int;
+  column int;
+}
+func ==(a TextPosition, b TextPosition) bool {
+  a.offset == b.offset and a.line == b.line and a.column == b.column
+}
+func +(s str, self TextPosition) str {
+  s + (self.line + ":" + self.column)
+}
+func TextPosition(s StrSlice, offset int) TextPosition {
+  column = 1;
+  line = 1;
+  foreach i in range(0, s.len()) {
+    if i == offset {
+      return TextPosition(offset, line, column);
+    }
+    if s.slice(i, i + 1) == "\n" {
+      set column = 1;
+      set line = line + 1;
+    } else {
+      set column = column + 1;
+    }
+  }
+  panic("TextPosition: offset out of string bounds!");
+}
+
