@@ -101,7 +101,8 @@ func peek(self &ParseIter) StrSlice {
 }
 
 
-func skipIfNextChar<F>(self &ParseIter, f F) bool {
+func skipIfNextChar<F>(self &ParseIter, f &F) bool
+where func(&F, StrSlice)bool {
   if self.hasNext() and (f)(self.Rest().slice(0, 1)) {
     set self.pos = self.pos + 1;
     return true;
@@ -111,13 +112,13 @@ func skipIfNextChar<F>(self &ParseIter, f F) bool {
 }
 
 
-func nextIsTag(originalIter &ParseIter) Opt<StrSlice> {
-  input = copy(originalIter);
-  input.skipWhitespace();
-}
+//func nextIsTag(originalIter &ParseIter) Opt<StrSlice> {
+//  input = copy(originalIter);
+//  input.skipWhitespace();
+//}
 
 func skipWhitespace(input &ParseIter) {
-  while input.skipIfNextChar(isWhitespace) {
+  while input.skipIfNextChar(x => isWhitespace(x)) {
   }
 }
 
