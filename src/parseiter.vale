@@ -26,9 +26,15 @@ func nextIs(self &ParseIter, needle str) bool {
 func nextIn(self &ParseIter, needles str) bool {
   needles.contains(self.peek())
 }
+func expectPeek(self &ParseIter, needle str) {
+  self.expectPeek(needle.slice());
+}
+func expectPeek(self &ParseIter, needle StrSlice) {
+  vassert(self.Rest().startsWith(needle), "Expected " + needle);
+}
 func skipExpect(self &ParseIter, needle str) { skipExpect(self, needle.slice()) }
 func skipExpect(self &ParseIter, needle StrSlice) {
-  vassert(self.Rest().startsWith(needle), "Expected " + needle);
+  expectPeek(self, needle);
   set self.pos = self.pos + needle.len();
 }
 func skipIfNext(self &ParseIter, needle str) bool { self.skipIfNext(needle.slice()) }
